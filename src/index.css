@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.leaflet-container {
+  width: 100%;
+  height: 100vh;
+  z-index: 1;
+}
+
+/* Fix Leaflet control positioning */
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 400;
+}
+
+/* Fix Leaflet popup positioning */
+.leaflet-popup {
+  z-index: 450;
+}
+
+/* Date Picker Styles */
+.rdp {
+  --rdp-cell-size: 40px;
+  --rdp-accent-color: #3b82f6;
+  --rdp-background-color: #e5e7eb;
+  --rdp-accent-color-dark: #2563eb;
+  --rdp-background-color-dark: #1f2937;
+  --rdp-outline: 2px solid var(--rdp-accent-color);
+  --rdp-outline-selected: 2px solid var(--rdp-accent-color);
+  margin: 0;
+}
+
+.rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.rdp-day_selected {
+  background-color: var(--rdp-accent-color);
+}
+
+.rdp-day_selected:hover {
+  background-color: var(--rdp-accent-color-dark);
+}
+
+.rdp-button {
+  color: white;
+}
+
+/* Leaflet Draw Styles */
+.leaflet-draw-toolbar a {
+  background-color: white;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.leaflet-draw-toolbar a:hover {
+  background-color: #f4f4f4;
+}
+
+.leaflet-draw-actions {
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+}
+
+.leaflet-draw-actions a {
+  color: #333;
+  text-decoration: none;
+  padding: 4px 8px;
+}
+
+.leaflet-draw-actions a:hover {
+  background-color: #f4f4f4;
+}
