@@ -5,12 +5,13 @@ import 'leaflet-draw';
 import 'leaflet-draw/dist/leaflet.draw.css';
 
 interface DrawControlProps {
+  position?: L.ControlPosition;
   isDrawing: boolean;
   onSave: (kml: string) => void;
   onDrawingComplete: () => void;
 }
 
-export function DrawControl({ isDrawing, onSave, onDrawingComplete }: DrawControlProps) {
+export function DrawControl({ position, isDrawing, onSave, onDrawingComplete }: DrawControlProps) {
   const map = useMap();
 
   useEffect(() => {
@@ -19,6 +20,7 @@ export function DrawControl({ isDrawing, onSave, onDrawingComplete }: DrawContro
     map.addLayer(drawnItems);
 
     const drawControl = new L.Control.Draw({
+      position: position || 'topleft',
       draw: {
         polygon: isDrawing,
         polyline: false,

@@ -12,6 +12,9 @@ import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
+// Add this CSS near the top of your file, after the other imports
+import './leaflet-draw-override.css';
+
 const DefaultIcon = L.icon({
   iconUrl: icon,
   shadowUrl: iconShadow,
@@ -36,31 +39,39 @@ const indicators = [
   },
   { 
     name: 'Chlorophyll-a', 
-    color: 'from-green-600 to-red-600',
+    color: 'from-green-500 to-red-500',
     layer: 'CHLA',
-    description: 'Measures the concentration of chlorophyll-a in water bodies, indicating phytoplankton presence.'
+    description: 'Measures the concentration of chlorophyll-a in water bodies, indicating phytoplankton presence.',
+    unit: 'mg/m³'
   },
   { 
     name: 'Dissolved Oxygen', 
-    color: 'from-blue-600 to-yellow-600',
+    color: 'from-red-500 to-green-500',
     layer: 'DISSOLVED-OXYGEN',
-    description: 'Shows oxygen levels in water, crucial for aquatic life support.'
+    description: 'Shows oxygen levels in water, crucial for aquatic life support.',
+    unit: 'mg/L'
   },
   { 
     name: 'Total Suspended Solids', 
-    color: 'from-gray-400 to-gray-800',
+    color: 'from-yellow-400 to-purple-600',
     layer: 'TOTAL-SUSPENDED-SOLIDS',
-    description: 'Indicates the amount of particles suspended in water, affecting water quality.'
+    description: 'Indicates the amount of particles suspended in water, affecting water quality.',
+    unit: 'mg/L'
   },
   { 
     name: 'Turbidity', 
-    color: 'from-blue-800 to-black',
+    color: 'from-yellow-800 to-purple-900',
     layer: 'TURBIDITY',
-    description: 'Measures water clarity and the presence of suspended particles.'
+    description: 'Measures water clarity and the presence of suspended particles.',
+    unit: 'NTU'
   },
   { 
     name: 'Forest Fires', 
-    color: 'from-green-800 to-red-800',
+    type: 'discrete',
+    indicators: [
+      { color: 'bg-red-600', label: 'Active Fires' },
+      { color: 'bg-yellow-500', label: 'Burned Areas' }
+    ],
     layer: 'INCENDIOS-FORESTALES',
     description: 'Monitors active forest fires and recently burned areas.'
   }
@@ -220,6 +231,7 @@ export function Map({ center = [20.2833, -103.2000], zoom = 11 }: MapProps) {
         )}
         <ZoomControl position="bottomright" />
         <DrawControl 
+          position="bottomright"
           isDrawing={isDrawing}
           onSave={handleSaveKML}
           onDrawingComplete={() => setIsDrawing(false)}
@@ -261,18 +273,29 @@ export function Map({ center = [20.2833, -103.2000], zoom = 11 }: MapProps) {
         <div className="absolute right-0 top-1/2 -translate-y-1/2 z-[1000] bg-black bg-opacity-80 text-white p-4 rounded-l-3xl" style={{ width: '300px' }}>
           <h3 className="text-lg font-semibold mb-4">{selectedIndicator.name}</h3>
           <div className="flex items-center mb-4">
-            <div className="w-8 h-32 rounded-full overflow-hidden mr-4">
-              <div className={`w-full h-full bg-gradient-to-b ${selectedIndicator.color}`}></div>
-            </div>
+            {selectedIndicator.type === 'discrete' ? (
+              <div className="flex flex-col gap-4 mr-4">
+                {selectedIndicator.indicators.map((ind, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div className={`w-6 h-6 rounded-lg ${ind.color}`}></div>
+                    <span className="text-sm">{ind.label}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="w-8 h-32 rounded-full overflow-hidden mr-4">
+                <div className={`w-full h-full bg-gradient-to-t ${selectedIndicator.color}`}></div>
+              </div>
+            )}
             <p className="flex-1">
               {selectedIndicator.description}
             </p>
           </div>
-          {selectedIndicator.layer && (
+          {selectedIndicator.layer && !selectedIndicator.type && (
             <div className="text-sm">
-              <p className="mb-2">Low</p>
+              <p className="mb-2">High {selectedIndicator.unit && `(${selectedIndicator.unit})`}</p>
               <p className="mb-2">Medium</p>
-              <p>High</p>
+              <p>Low {selectedIndicator.unit && `(${selectedIndicator.unit})`}</p>
             </div>
           )}
         </div>
