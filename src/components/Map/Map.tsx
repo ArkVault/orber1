@@ -15,6 +15,16 @@ import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 // Add this CSS near the top of your file, after the other imports
 import './leaflet-draw-override.css';
 
+// Add these to your imports at the top
+import { 
+  Droplets, // for Chlorophyll
+  Wind, // for Dissolved Oxygen
+  Container, // for Total Suspended Solids
+  Waves, // for Turbidity
+  Flame, // for Forest Fires
+  Eye // for Natural Color
+} from 'lucide-react';
+
 const DefaultIcon = L.icon({
   iconUrl: icon,
   shadowUrl: iconShadow,
@@ -35,11 +45,13 @@ const indicators = [
   { 
     name: 'Natural Color',
     type: 'natural',
+    icon: Eye,
     description: 'Natural satellite imagery showing Earth as it appears to the human eye. This view helps identify surface features, vegetation patterns, and water bodies in their true colors.',
     quote: '"The natural environment is the great outpatient healer." - Bruce Chatwin'
   },
   { 
-    name: 'Chlorophyll-a', 
+    name: 'Chlorophyll-a',
+    icon: Droplets,
     color: 'from-green-500 to-red-500',
     layer: 'CHLA',
     description: 'Chlorophyll-a is the primary photosynthetic pigment found in all plants and algae. High concentrations in water bodies indicate algal blooms, which can affect water quality and ecosystem health. Regular monitoring helps identify potential eutrophication issues and assess the overall health of aquatic ecosystems.',
@@ -47,7 +59,8 @@ const indicators = [
     quote: 'Reference: Gitelson, A. A., et al. (2008). "A simple semi-analytical model for remote estimation of chlorophyll-a in turbid waters." Remote Sensing of Environment, 112(9), 3582-3593.'
   },
   { 
-    name: 'Dissolved Oxygen', 
+    name: 'Dissolved Oxygen',
+    icon: Wind,
     color: 'from-red-500 to-green-500',
     layer: 'DISSOLVED-OXYGEN',
     description: 'Dissolved oxygen (DO) is essential for aquatic life and ecosystem health. Low DO levels can stress or kill fish and other organisms. Levels are affected by temperature, atmospheric pressure, biological activity, and water movement. Healthy water bodies typically maintain DO levels between 6-10 mg/L.',
@@ -55,7 +68,8 @@ const indicators = [
     quote: 'Reference: Diaz, R. J., & Rosenberg, R. (2008). "Spreading dead zones and consequences for marine ecosystems." Science, 321(5891), 926-929.'
   },
   { 
-    name: 'Total Suspended Solids', 
+    name: 'Total Suspended Solids',
+    icon: Container,
     color: 'from-yellow-400 to-purple-600',
     layer: 'TOTAL-SUSPENDED-SOLIDS',
     description: 'Total Suspended Solids (TSS) measures particles suspended in water, including sediment, algae, and organic matter. High TSS levels can reduce water clarity, affect aquatic life, and indicate pollution or erosion. It\'s a key indicator of water quality and can impact ecosystem functioning and recreational water use.',
@@ -63,7 +77,8 @@ const indicators = [
     quote: 'Reference: Ritchie, J. C., et al. (2003). "Remote sensing techniques to assess water quality." Photogrammetric Engineering & Remote Sensing, 69(6), 695-704.'
   },
   { 
-    name: 'Turbidity', 
+    name: 'Turbidity',
+    icon: Waves,
     color: 'from-yellow-800 to-purple-900',
     layer: 'TURBIDITY',
     description: 'Turbidity measures water clarity and how much light can penetrate through water. It\'s affected by suspended particles like clay, silt, organic matter, and microorganisms. High turbidity can harm aquatic life by reducing light penetration, increasing water temperature, and decreasing dissolved oxygen levels. It\'s also an important indicator for drinking water quality.',
@@ -71,7 +86,8 @@ const indicators = [
     quote: 'Reference: Kirk, J. T. O. (1994). "Light and photosynthesis in aquatic ecosystems." Cambridge University Press, 3rd Edition.'
   },
   { 
-    name: 'Forest Fires', 
+    name: 'Forest Fires',
+    icon: Flame,
     type: 'discrete',
     indicators: [
       { color: 'bg-red-600', label: 'Active Fires' },
@@ -293,26 +309,30 @@ export function Map({ center = [20.2700, -103.2000], zoom = 12 }: MapProps) {
       </MapContainer>
 
       <div 
-        className={`absolute left-0 top-1/2 -translate-y-1/2 z-[1000] bg-black bg-opacity-80 text-white p-4 transition-all duration-300 ease-in-out rounded-r-3xl ${
+        className={`absolute left-0 top-1/2 -translate-y-1/2 z-[1000] bg-black bg-opacity-80 text-white p-6 transition-all duration-300 ease-in-out rounded-r-3xl ${
           isPanelVisible ? 'translate-x-0' : '-translate-x-full'
         }`}
         style={{ width: 'fit-content', maxWidth: '300px' }}
       >
-        <h2 className="text-xl font-bold mb-6">Indicators</h2>
-        <div className="space-y-4">
-          {indicators.map((indicator) => (
-            <button 
-              key={indicator.name}
-              className={`w-full px-4 py-2 text-left text-white rounded-xl transition-colors ${
-                selectedIndicator?.name === indicator.name 
-                  ? 'bg-yellow-700'
-                  : 'bg-white bg-opacity-10 hover:bg-opacity-20'
-              }`}
-              onClick={() => handleIndicatorSelect(indicator)}
-            >
-              {indicator.name}
-            </button>
-          ))}
+        <h2 className="text-xl font-bold mb-8">Indicators</h2>
+        <div className="space-y-6">
+          {indicators.map((indicator) => {
+            const Icon = indicator.icon;
+            return (
+              <button 
+                key={indicator.name}
+                className={`w-full px-6 py-3 text-left text-white rounded-xl transition-colors flex items-center gap-3 ${
+                  selectedIndicator?.name === indicator.name 
+                    ? 'bg-yellow-600 hover:bg-yellow-700'
+                    : 'bg-white bg-opacity-10 hover:bg-opacity-20'
+                }`}
+                onClick={() => handleIndicatorSelect(indicator)}
+              >
+                <Icon className="w-5 h-5" />
+                <span>{indicator.name}</span>
+              </button>
+            );
+          })}
         </div>
         <button
           className="absolute -right-12 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-80 text-white p-2 rounded-r-xl transition-all duration-300 ease-in-out"
