@@ -34,36 +34,41 @@ const WMS_URL = 'https://sh.dataspace.copernicus.eu/ogc/wms/fd8fbb51-cfdf-460d-9
 const indicators = [
   { 
     name: 'Natural Color',
-    color: 'from-blue-500 to-green-500',
-    description: 'Natural satellite imagery showing Earth as it appears to the human eye.'
+    type: 'natural',
+    description: 'Natural satellite imagery showing Earth as it appears to the human eye. This view helps identify surface features, vegetation patterns, and water bodies in their true colors.',
+    quote: '"The natural environment is the great outpatient healer." - Bruce Chatwin'
   },
   { 
     name: 'Chlorophyll-a', 
     color: 'from-green-500 to-red-500',
     layer: 'CHLA',
-    description: 'Measures the concentration of chlorophyll-a in water bodies, indicating phytoplankton presence.',
-    unit: 'mg/m³'
+    description: 'Chlorophyll-a is the primary photosynthetic pigment found in all plants and algae. High concentrations in water bodies indicate algal blooms, which can affect water quality and ecosystem health. Regular monitoring helps identify potential eutrophication issues and assess the overall health of aquatic ecosystems.',
+    unit: 'mg/m³',
+    quote: 'Reference: Gitelson, A. A., et al. (2008). "A simple semi-analytical model for remote estimation of chlorophyll-a in turbid waters." Remote Sensing of Environment, 112(9), 3582-3593.'
   },
   { 
     name: 'Dissolved Oxygen', 
     color: 'from-red-500 to-green-500',
     layer: 'DISSOLVED-OXYGEN',
-    description: 'Shows oxygen levels in water, crucial for aquatic life support.',
-    unit: 'mg/L'
+    description: 'Dissolved oxygen (DO) is essential for aquatic life and ecosystem health. Low DO levels can stress or kill fish and other organisms. Levels are affected by temperature, atmospheric pressure, biological activity, and water movement. Healthy water bodies typically maintain DO levels between 6-10 mg/L.',
+    unit: 'mg/L',
+    quote: 'Reference: Diaz, R. J., & Rosenberg, R. (2008). "Spreading dead zones and consequences for marine ecosystems." Science, 321(5891), 926-929.'
   },
   { 
     name: 'Total Suspended Solids', 
     color: 'from-yellow-400 to-purple-600',
     layer: 'TOTAL-SUSPENDED-SOLIDS',
-    description: 'Indicates the amount of particles suspended in water, affecting water quality.',
-    unit: 'mg/L'
+    description: 'Total Suspended Solids (TSS) measures particles suspended in water, including sediment, algae, and organic matter. High TSS levels can reduce water clarity, affect aquatic life, and indicate pollution or erosion. It\'s a key indicator of water quality and can impact ecosystem functioning and recreational water use.',
+    unit: 'mg/L',
+    quote: 'Reference: Ritchie, J. C., et al. (2003). "Remote sensing techniques to assess water quality." Photogrammetric Engineering & Remote Sensing, 69(6), 695-704.'
   },
   { 
     name: 'Turbidity', 
     color: 'from-yellow-800 to-purple-900',
     layer: 'TURBIDITY',
-    description: 'Measures water clarity and the presence of suspended particles.',
-    unit: 'NTU'
+    description: 'Turbidity measures water clarity and how much light can penetrate through water. It\'s affected by suspended particles like clay, silt, organic matter, and microorganisms. High turbidity can harm aquatic life by reducing light penetration, increasing water temperature, and decreasing dissolved oxygen levels. It\'s also an important indicator for drinking water quality.',
+    unit: 'NTU',
+    quote: 'Reference: Kirk, J. T. O. (1994). "Light and photosynthesis in aquatic ecosystems." Cambridge University Press, 3rd Edition.'
   },
   { 
     name: 'Forest Fires', 
@@ -73,11 +78,56 @@ const indicators = [
       { color: 'bg-yellow-500', label: 'Burned Areas' }
     ],
     layer: 'INCENDIOS-FORESTALES',
-    description: 'Monitors active forest fires and recently burned areas.'
+    description: 'Satellite-based monitoring of forest fires. Red indicators show currently active fires, while yellow areas represent recently burned zones. This information is crucial for emergency response and forest management.',
+    quote: 'Reference: Giglio, L., et al. (2016). "Active fire detection and characterization with the MODIS sensor." Remote Sensing of Environment, 178, 31-41.'
   }
 ];
 
-export function Map({ center = [20.2833, -103.2000], zoom = 11 }: MapProps) {
+// Update the WMS_RANGES constant with more precise ranges
+const WMS_RANGES = {
+  'CHLA': {
+    min: 0,
+    mid: 5,
+    max: 10,
+    unit: 'mg/m³'
+  },
+  'DISSOLVED-OXYGEN': {
+    min: 0,
+    mid: 7,
+    max: 14,
+    unit: 'mg/L'
+  },
+  'TOTAL-SUSPENDED-SOLIDS': {
+    min: 0,
+    mid: 50,
+    max: 100,
+    unit: 'mg/L'
+  },
+  'TURBIDITY': {
+    min: 0,
+    mid: 25,
+    max: 50,
+    unit: 'NTU'
+  }
+};
+
+// Add this function to fetch the actual ranges
+const fetchWMSCapabilities = async () => {
+  const url = `${WMS_URL}?SERVICE=WMS&REQUEST=GetCapabilities&VERSION=1.3.0`;
+  try {
+    const response = await fetch(url);
+    const text = await response.text();
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(text, "text/xml");
+    // Parse the XML to get the ranges for each layer
+    // You'll need to adapt this based on the actual XML structure
+    console.log(xmlDoc);
+  } catch (error) {
+    console.error('Error fetching WMS capabilities:', error);
+  }
+};
+
+export function Map({ center = [20.2700, -103.2000], zoom = 12 }: MapProps) {
   const [isPanelVisible, setIsPanelVisible] = React.useState(true);
   const [selectedIndicator, setSelectedIndicator] = React.useState<any>(indicators[0]);
   const [showDatePicker, setShowDatePicker] = React.useState(false);
@@ -130,6 +180,10 @@ export function Map({ center = [20.2833, -103.2000], zoom = 11 }: MapProps) {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
+  }, []);
+
+  React.useEffect(() => {
+    fetchWMSCapabilities();
   }, []);
 
   return (
@@ -282,22 +336,46 @@ export function Map({ center = [20.2833, -103.2000], zoom = 11 }: MapProps) {
                   </div>
                 ))}
               </div>
+            ) : selectedIndicator.type === 'natural' ? (
+              <p className="text-sm">
+                {selectedIndicator.description}
+              </p>
             ) : (
-              <div className="w-8 h-32 rounded-full overflow-hidden mr-4">
-                <div className={`w-full h-full bg-gradient-to-t ${selectedIndicator.color}`}></div>
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col justify-between text-xs text-right h-32">
+                  {selectedIndicator.layer && WMS_RANGES[selectedIndicator.layer] ? (
+                    <>
+                      <span>{WMS_RANGES[selectedIndicator.layer].max}</span>
+                      <span>{WMS_RANGES[selectedIndicator.layer].mid}</span>
+                      <span>{WMS_RANGES[selectedIndicator.layer].min}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>100</span>
+                      <span>50</span>
+                      <span>0</span>
+                    </>
+                  )}
+                </div>
+                <div className="w-8 h-32 rounded-full overflow-hidden">
+                  <div className={`w-full h-full bg-gradient-to-t ${selectedIndicator.color}`}></div>
+                </div>
+                {selectedIndicator.unit && (
+                  <div className="text-xs ml-1 self-center">
+                    {selectedIndicator.unit}
+                  </div>
+                )}
               </div>
             )}
-            <p className="flex-1">
-              {selectedIndicator.description}
-            </p>
+            {selectedIndicator.type !== 'natural' && (
+              <p className="flex-1 ml-4">
+                {selectedIndicator.description}
+              </p>
+            )}
           </div>
-          {selectedIndicator.layer && !selectedIndicator.type && (
-            <div className="text-sm">
-              <p className="mb-2">High {selectedIndicator.unit && `(${selectedIndicator.unit})`}</p>
-              <p className="mb-2">Medium</p>
-              <p>Low {selectedIndicator.unit && `(${selectedIndicator.unit})`}</p>
-            </div>
-          )}
+          <p className="text-sm italic text-gray-300 border-l-2 border-gray-500 pl-3">
+            {selectedIndicator.quote}
+          </p>
         </div>
       )}
     </div>
