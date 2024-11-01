@@ -150,7 +150,7 @@ export function Map({ center = [20.2700, -103.2000], zoom = 12 }: MapProps) {
   const [showSensorMenu, setShowSensorMenu] = React.useState(false);
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>();
   const [isDrawing, setIsDrawing] = React.useState(false);
-  const [wmsLayer, setWmsLayer] = React.useState<any>(null);
+  const [selectedLayer, setSelectedLayer] = React.useState<string>('');
 
   const handleClickOutside = (e: MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -176,18 +176,10 @@ export function Map({ center = [20.2700, -103.2000], zoom = 12 }: MapProps) {
 
   const handleIndicatorSelect = (indicator: any) => {
     setSelectedIndicator(indicator);
-    if (indicator.layer) {
-      setWmsLayer({
-        url: WMS_URL,
-        params: {
-          layers: indicator.layer,
-          format: 'image/png',
-          transparent: true,
-          version: '1.3.0'
-        }
-      });
+    if (indicator.type !== 'natural') {
+      setSelectedLayer(indicator.layer || '');
     } else {
-      setWmsLayer(null);
+      setSelectedLayer('');
     }
   };
 
@@ -290,13 +282,14 @@ export function Map({ center = [20.2700, -103.2000], zoom = 12 }: MapProps) {
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
         />
-        {wmsLayer && (
+        {selectedLayer && selectedIndicator?.type !== 'natural' && (
           <WMSTileLayer
-            url={wmsLayer.url}
-            layers={wmsLayer.params.layers}
-            format={wmsLayer.params.format}
-            transparent={wmsLayer.params.transparent}
-            version={wmsLayer.params.version}
+            key={selectedLayer}
+            url={WMS_URL}
+            layers={selectedLayer}
+            format="image/png"
+            transparent={true}
+            version="1.3.0"
           />
         )}
         <ZoomControl position="bottomright" />
