@@ -46,8 +46,8 @@ const indicators = [
     name: 'Natural Color',
     type: 'natural',
     icon: Eye,
-    description: 'Natural satellite imagery showing Earth as it appears to the human eye. This view helps identify surface features, vegetation patterns, and water bodies in their true colors.',
-    quote: '"The natural environment is the great outpatient healer." - Bruce Chatwin'
+    description: 'Natural satellite imagery showing Earth as it appears to the human eye. This view helps identify surface features, vegetatNatural color satellite imagery utilizes a combination of visible red, green, and blue bands to create images that closely resemble how the human eye perceives the Earth. This method allows for the effective analysis of land cover, vegetation health, and urban development, providing critical insights into environmental changes and anthropogenic impactsion patterns, and water bodies in their true colors.',
+    quote: '"Natural satellite imagery showing Earth as it appears to the human eye. This view helps identify surface features, vegetation patterns, and water bodies in their true colors'
   },
   { 
     name: 'Chlorophyll-a',
