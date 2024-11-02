@@ -2,7 +2,7 @@ import React from 'react';
 import { MapContainer, TileLayer, ZoomControl, WMSTileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
-import { Menu, Calendar, MapPin, Activity, ChevronLeft, ChevronRight, Search, Bell } from 'lucide-react';
+import { Menu, Calendar, MapPin, Activity, ChevronLeft, ChevronRight, Search, Bell, X } from 'lucide-react';
 import { DayPicker, DateRange } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { DrawControl } from './DrawControl';
@@ -155,6 +155,11 @@ export function Map({ center = [20.2700, -103.2000], zoom = 12 }: MapProps) {
   const [isDrawing, setIsDrawing] = React.useState(false);
   const [selectedLayer, setSelectedLayer] = React.useState<string>('');
   const [isLoading, setIsLoading] = React.useState(false);
+  const [showSearch, setShowSearch] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [searchResults, setSearchResults] = React.useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = React.useState(false);
+  const mapRef = React.useRef<L.Map | null>(null);
 
   const handleClickOutside = (e: MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -191,6 +196,35 @@ export function Map({ center = [20.2700, -103.2000], zoom = 12 }: MapProps) {
       setSelectedLayer('');
     }
     setIsLoading(false);
+  };
+
+  const handleSearch = async (query: string) => {
+    if (query.length < 3) {
+      setSearchResults([]);
+      return;
+    }
+    
+    setIsSearching(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`
+      );
+      const data = await response.json();
+      setSearchResults(data.slice(0, 5));
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+    }
+    setIsSearching(false);
+  };
+
+  const handleLocationSelect = (result: SearchResult) => {
+    if (mapRef.current) {
+      mapRef.current.setView([parseFloat(result.lat), parseFloat(result.lon)], 12);
+    }
+    setShowSearch(false);
+    setSearchQuery('');
+    setSearchResults([]);
   };
 
   React.useEffect(() => {
@@ -273,7 +307,70 @@ export function Map({ center = [20.2700, -103.2000], zoom = 12 }: MapProps) {
           )}
         </div>
         <div className="flex items-center space-x-4">
-          <Search className="text-gray-300 cursor-pointer hover:text-white" />
+          <div className="relative">
+            <button 
+              onClick={() => setShowSearch(!showSearch)}
+              className="text-gray-300 cursor-pointer hover:text-white p-2 rounded-xl hover:bg-white hover:bg-opacity-20"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+            
+            {showSearch && (
+              <div className="absolute right-0 mt-2 w-80 bg-black bg-opacity-90 rounded-xl shadow-lg p-4 z-50">
+                <div className="flex items-center gap-2 mb-4">
+                  <Search className="w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      handleSearch(e.target.value);
+                    }}
+                    placeholder="Search places..."
+                    className="flex-1 bg-transparent border-none outline-none text-white placeholder-gray-400"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSearchResults([]);
+                      }}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                
+                {isSearching && (
+                  <div className="text-center text-gray-400 py-2">
+                    Searching...
+                  </div>
+                )}
+                
+                {!isSearching && searchResults.length > 0 && (
+                  <div className="space-y-2">
+                    {searchResults.map((result, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleLocationSelect(result)}
+                        className="w-full text-left px-3 py-2 text-white hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors text-sm truncate"
+                      >
+                        {result.display_name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                
+                {!isSearching && searchQuery.length >= 3 && searchResults.length === 0 && (
+                  <div className="text-center text-gray-400 py-2">
+                    No results found
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
           <Bell className="text-gray-300 cursor-pointer hover:text-white" />
           <div className="flex items-center space-x-2">
             <span>User</span>
@@ -287,6 +384,7 @@ export function Map({ center = [20.2700, -103.2000], zoom = 12 }: MapProps) {
         zoom={zoom} 
         className="h-full w-full"
         zoomControl={false}
+        ref={mapRef}
       >
         <TileLayer
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
