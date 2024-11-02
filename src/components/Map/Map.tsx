@@ -25,6 +25,9 @@ import {
   Eye // for Natural Color
 } from 'lucide-react';
 
+// Add this import at the top
+import './loader.css';
+
 const DefaultIcon = L.icon({
   iconUrl: icon,
   shadowUrl: iconShadow,
@@ -151,6 +154,7 @@ export function Map({ center = [20.2700, -103.2000], zoom = 12 }: MapProps) {
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>();
   const [isDrawing, setIsDrawing] = React.useState(false);
   const [selectedLayer, setSelectedLayer] = React.useState<string>('');
+  const [isLoading, setIsLoading] = React.useState(false);
 
   const handleClickOutside = (e: MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -174,13 +178,19 @@ export function Map({ center = [20.2700, -103.2000], zoom = 12 }: MapProps) {
     window.URL.revokeObjectURL(url);
   };
 
-  const handleIndicatorSelect = (indicator: any) => {
+  const handleIndicatorSelect = async (indicator: any) => {
+    setIsLoading(true);
     setSelectedIndicator(indicator);
+    
+    // Simulate loading time
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
     if (indicator.type !== 'natural') {
       setSelectedLayer(indicator.layer || '');
     } else {
       setSelectedLayer('');
     }
+    setIsLoading(false);
   };
 
   React.useEffect(() => {
@@ -389,6 +399,17 @@ export function Map({ center = [20.2700, -103.2000], zoom = 12 }: MapProps) {
           <p className="text-sm italic text-gray-300 border-l-2 border-gray-500 pl-3">
             {selectedIndicator.quote}
           </p>
+        </div>
+      )}
+
+      {isLoading && (
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[2000]">
+          <div className="loader">
+            <div className="intern"></div>
+            <div className="external-shadow">
+              <div className="central"></div>
+            </div>
+          </div>
         </div>
       )}
     </div>
