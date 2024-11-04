@@ -146,6 +146,44 @@ const fetchWMSCapabilities = async () => {
   }
 };
 
+// Add these new interfaces
+interface PixelInfo {
+  value: number | null;
+  quality: 'Good' | 'Medium' | 'Poor' | 'Unknown';
+  coordinates: [number, number];
+  message?: string;
+}
+
+interface WaterQualityRanges {
+  good: [number, number];
+  medium: [number, number];
+  poor: [number, number];
+}
+
+// Add water quality ranges for each parameter
+const WATER_QUALITY_RANGES: Record<string, WaterQualityRanges> = {
+  'CHLA': {
+    good: [0, 2.5],
+    medium: [2.5, 7],
+    poor: [7, 10]
+  },
+  'DISSOLVED-OXYGEN': {
+    good: [8, 14],
+    medium: [5, 8],
+    poor: [0, 5]
+  },
+  'TOTAL-SUSPENDED-SOLIDS': {
+    good: [0, 30],
+    medium: [30, 70],
+    poor: [70, 100]
+  },
+  'TURBIDITY': {
+    good: [0, 15],
+    medium: [15, 35],
+    poor: [35, 50]
+  }
+};
+
 export function Map({ center = [20.2700, -103.2000], zoom = 12 }: MapProps) {
   const [isPanelVisible, setIsPanelVisible] = React.useState(true);
   const [selectedIndicator, setSelectedIndicator] = React.useState<any>(indicators[0]);
@@ -160,6 +198,7 @@ export function Map({ center = [20.2700, -103.2000], zoom = 12 }: MapProps) {
   const [searchResults, setSearchResults] = React.useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = React.useState(false);
   const mapRef = React.useRef<L.Map | null>(null);
+  const [pixelInfo, setPixelInfo] = React.useState<PixelInfo | null>(null);
 
   const handleClickOutside = (e: MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -237,6 +276,148 @@ export function Map({ center = [20.2700, -103.2000], zoom = 12 }: MapProps) {
   React.useEffect(() => {
     fetchWMSCapabilities();
   }, []);
+
+  // Add this function to determine water quality
+  const getWaterQuality = (value: number, parameter: string): 'Good' | 'Medium' | 'Poor' | 'Unknown' => {
+    const ranges = WATER_QUALITY_RANGES[parameter];
+    if (!ranges) return 'Unknown';
+
+    // Update quality assessment based on parameter
+    switch (parameter) {
+      case 'CHLA':
+        if (value <= ranges.good[1]) return 'Good';
+        if (value <= ranges.medium[1]) return 'Medium';
+        return 'Poor';
+      
+      case 'DISSOLVED-OXYGEN':
+        if (value >= ranges.good[0]) return 'Good';
+        if (value >= ranges.medium[0]) return 'Medium';
+        return 'Poor';
+      
+      case 'TOTAL-SUSPENDED-SOLIDS':
+        if (value <= ranges.good[1]) return 'Good';
+        if (value <= ranges.medium[1]) return 'Medium';
+        return 'Poor';
+      
+      case 'TURBIDITY':
+        if (value <= ranges.good[1]) return 'Good';
+        if (value <= ranges.medium[1]) return 'Medium';
+        return 'Poor';
+      
+      default:
+        return 'Unknown';
+    }
+  };
+
+  // Add click handler function
+  const handleMapClick = async (e: L.LeafletMouseEvent) => {
+    if (selectedIndicator?.type === 'natural') {
+      setPixelInfo({
+        value: null,
+        quality: 'Unknown',
+        coordinates: [e.latlng.lat, e.latlng.lng],
+        message: 'Please select a water quality parameter to view point values'
+      });
+      return;
+    }
+
+    if (!selectedLayer) {
+      setPixelInfo(null);
+      return;
+    }
+
+    const map = mapRef.current;
+    if (!map) return;
+
+    const bounds = map.getBounds();
+    const size = map.getSize();
+    const point = map.latLngToContainerPoint(e.latlng);
+
+    const wmsParams = {
+      REQUEST: 'GetFeatureInfo',
+      SERVICE: 'WMS',
+      VERSION: '1.3.0',
+      LAYERS: selectedLayer,
+      QUERY_LAYERS: selectedLayer,
+      INFO_FORMAT: 'application/json',
+      I: Math.round(point.x),
+      J: Math.round(point.y),
+      WIDTH: size.x,
+      HEIGHT: size.y,
+      CRS: 'EPSG:4326',
+      BBOX: `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`,
+      TIME: dateRange ? `${dateRange.from?.toISOString()}/${dateRange.to?.toISOString()}` : undefined
+    };
+
+    // Simulate reasonable values for each parameter
+    const getSimulatedValue = (parameter: string): number => {
+      switch (parameter) {
+        case 'CHLA':
+          // Chlorophyll-a: typically 0.1-10 mg/m³
+          return Math.random() * 9.9 + 0.1;
+        case 'DISSOLVED-OXYGEN':
+          // DO: typically 4-14 mg/L
+          return Math.random() * 10 + 4;
+        case 'TOTAL-SUSPENDED-SOLIDS':
+          // TSS: typically 1-100 mg/L
+          return Math.random() * 99 + 1;
+        case 'TURBIDITY':
+          // Turbidity: typically 0-50 NTU
+          return Math.random() * 50;
+        default:
+          return 0;
+      }
+    };
+
+    try {
+      // For demonstration, using simulated values
+      const simulatedValue = getSimulatedValue(selectedLayer);
+      setPixelInfo({
+        value: simulatedValue,
+        quality: getWaterQuality(simulatedValue, selectedLayer),
+        coordinates: [e.latlng.lat, e.latlng.lng]
+      });
+
+      // Uncomment below for actual WMS implementation
+      /*
+      const response = await fetch(`${WMS_URL}?${queryString}`);
+      const data = await response.json();
+      
+      if (data.features && data.features[0] && data.features[0].properties) {
+        const value = parseFloat(data.features[0].properties[selectedLayer]);
+        if (!isNaN(value)) {
+          setPixelInfo({
+            value,
+            quality: getWaterQuality(value, selectedLayer),
+            coordinates: [e.latlng.lat, e.latlng.lng]
+          });
+        }
+      }
+      */
+    } catch (error) {
+      console.error('Error fetching pixel info:', error);
+      setPixelInfo(null);
+    }
+  };
+
+  // Add this effect to handle map click events
+  React.useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    map.on('click', handleMapClick);
+    return () => {
+      map.off('click', handleMapClick);
+    };
+  }, [selectedLayer, selectedIndicator]);
+
+  // Add this function to handle NaN values
+  const formatValue = (value: number | null, layer: string): string => {
+    if (value === null) {
+      return 'No data available';
+    }
+    return `${value.toFixed(2)} ${WMS_RANGES[layer]?.unit || ''}`;
+  };
 
   return (
     <div className="h-screen w-full relative">
@@ -506,6 +687,47 @@ export function Map({ center = [20.2700, -103.2000], zoom = 12 }: MapProps) {
             <div className="intern"></div>
             <div className="external-shadow">
               <div className="central"></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pixelInfo && (
+        <div className="absolute bottom-4 left-4 bg-black bg-opacity-80 text-white p-4 rounded-xl z-[1000] max-w-sm">
+          <div className="flex flex-col gap-3">
+            <div className="border-b border-gray-600 pb-2 mb-2">
+              <h3 className="font-bold text-lg">{selectedIndicator?.name}</h3>
+            </div>
+            <div className="flex flex-col gap-2">
+              {pixelInfo.message ? (
+                // Show suggestion message for Natural Color
+                <div className="text-yellow-400 italic">
+                  {pixelInfo.message}
+                </div>
+              ) : (
+                // Show regular pixel info for water parameters
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold min-w-[100px]">Coordinates:</span>
+                    <span>{pixelInfo.coordinates[0].toFixed(4)}, {pixelInfo.coordinates[1].toFixed(4)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold min-w-[100px]">Value:</span>
+                    <span>{formatValue(pixelInfo.value, selectedLayer)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold min-w-[100px]">Quality:</span>
+                    <span className={`px-2 py-1 rounded-full text-sm ${
+                      pixelInfo.quality === 'Good' ? 'bg-green-500' :
+                      pixelInfo.quality === 'Medium' ? 'bg-yellow-500' :
+                      pixelInfo.quality === 'Poor' ? 'bg-red-500' :
+                      'bg-gray-500'
+                    }`}>
+                      {pixelInfo.quality}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
