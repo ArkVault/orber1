@@ -424,7 +424,7 @@ export function Map({ center = [20.2700, -103.2000], zoom = 12 }: MapProps) {
                 key={indicator.name}
                 className={`w-full px-6 py-3 text-left text-white rounded-xl transition-colors flex items-center gap-3 ${
                   selectedIndicator?.name === indicator.name 
-                    ? 'bg-yellow-600 hover:bg-yellow-700'
+                    ? 'bg-gray-1000 hover:bg-gray-700'
                     : 'bg-white bg-opacity-10 hover:bg-opacity-20'
                 }`}
                 onClick={() => handleIndicatorSelect(indicator)}
